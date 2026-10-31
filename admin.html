@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Панель секретаря</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Панель секретаря</h2>
+            <p class="text-muted mb-0 text-capitalize">Текущая дата графика: <strong>{{ date_str }}</strong></p>
+        </div>
+        <a href="/logout" class="btn btn-outline-danger btn-sm">Выйти из системы</a>
+    </div>
+    
+    <!-- Загрузка расписания -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">1. Загрузить новое расписание</h5>
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="upload">
+                <div class="input-group">
+                    <input type="file" name="file" class="form-control" accept=".xlsx" required>
+                    <button class="btn btn-primary" type="submit">Загрузить Excel</button>
+                </div>
+                <small class="text-muted">.</small>
+            </form>
+        </div>
+    </div>
+
+    <!-- Утверждение и выгрузка графика (с отступами и неактивной кнопкой) -->
+    <div class="card mb-4 shadow-sm border-danger">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                <h5 class="card-title mb-0">Утверждение графика</h5>
+                <div>
+                    {% if is_approved %}
+                        <span class="badge bg-success fs-6 px-3 py-2">Статус: Утвержден</span>
+                    {% else %}
+                        <span class="badge bg-danger fs-6 px-3 py-2">Статус: Не утвержден</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Блок кнопок с красивым отступом сверху -->
+            <div class="d-flex justify-content-center align-items-center gap-3 mt-4 flex-wrap">
+                {% if is_approved %}
+                    <!-- Если утвержден: кнопка становится неактивной зеленой -->
+                    <button class="btn btn-success btn-lg px-4 fw-bold opacity-75" disabled>График утвержден</button>
+                    <!-- Активная кнопка скачивания -->
+                    <a href="/export" class="btn btn-success btn-lg px-4 fw-bold">Скачать в Excel</a>
+                {% else %}
+                    <!-- Если не утвержден: активная красная кнопка -->
+                    <form method="POST" class="m-0">
+                        <input type="hidden" name="action" value="approve">
+                        <button type="submit" class="btn btn-danger btn-lg px-4 fw-bold">Утвердить график</button>
+                    </form>
+                    <!-- Неактивная кнопка скачивания -->
+                    <button class="btn btn-secondary btn-lg px-4 fw-bold" disabled title="Сначала нажмите «Утвердить график»">Скачать в Excel</button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Список записавшихся -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title mb-3">2. Записались на сегодня</h5>
+            <table class="table table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Время</th>
+                        <th>ФИО</th>
+                        <th>Цель</th>
+                        <th class="text-center" style="width: 150px;">Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in booked %}
+                    <tr>
+                        <td>{{ row[1] }} – {{ row[2] }}</td>
+                        <td>{{ row[3] }}</td>
+                        <td>{{ row[4] }}</td>
+                        <td class="text-center">
+                            <form method="POST" onsubmit="return confirm('Аннулировать эту запись?');">
+                                <input type="hidden" name="action" value="cancel_slot">
+                                <input type="hidden" name="slot_id" value="{{ row[0] }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Аннулировать</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-3">Пока никто не записался</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <a href="/" class="btn btn-outline-secondary">Вернуться на главную</a>
+    </div>
+</div>
+</body>
+</html>
