@@ -9,16 +9,13 @@ app.secret_key = 'depot_secret_key_12345'
 DB_FILE = 'booking.db'
 
 ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "111"
+ADMIN_PASSWORD = "depot_password_123"
 
-# Функция для вывода даты на русском (например: "понедельник, 02.11.2026")
 # Функция для вывода даты по Московскому времени (UTC+3)
 def get_current_date_str():
     days = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье']
-    # Устанавливаем московское время (UTC + 3 часа)
     MSK = timezone(timedelta(hours=3))
     now = datetime.now(MSK)
-
     day_name = days[now.weekday()]
     return f"{day_name}, {now.strftime('%d.%m.%Y')}"
 
@@ -169,12 +166,10 @@ def export():
     for r in rows:
         ws.append(list(r))
         
-   MSK = timezone(timedelta(hours=3))
-filename = f"raspisanie_{datetime.now(MSK).strftime('%d_%m_%Y')}.xlsx"
+    MSK = timezone(timedelta(hours=3))
+    filename = f"raspisanie_{datetime.now(MSK).strftime('%d_%m_%Y')}.xlsx"
     wb.save(filename)
     return send_file(filename, as_attachment=True)
-
-import os
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
