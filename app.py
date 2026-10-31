@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, send_file,
 import sqlite3
 import openpyxl
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 app = Flask(__name__, template_folder='.')
 app.secret_key = 'depot_secret_key_12345'
@@ -12,10 +12,13 @@ ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "111"
 
 # Функция для вывода даты на русском (например: "понедельник, 02.11.2026")
+# Функция для вывода даты по Московскому времени (UTC+3)
 def get_current_date_str():
     days = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье']
-    months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
-    now = datetime.now()
+    # Устанавливаем московское время (UTC + 3 часа)
+    MSK = timezone(timedelta(hours=3))
+    now = datetime.now(MSK)
+
     day_name = days[now.weekday()]
     return f"{day_name}, {now.strftime('%d.%m.%Y')}"
 
@@ -166,7 +169,8 @@ def export():
     for r in rows:
         ws.append(list(r))
         
-    filename = f"raspisanie_{datetime.now().strftime('%d_%m_%Y')}.xlsx"
+   MSK = timezone(timedelta(hours=3))
+filename = f"raspisanie_{datetime.now(MSK).strftime('%d_%m_%Y')}.xlsx"
     wb.save(filename)
     return send_file(filename, as_attachment=True)
 
