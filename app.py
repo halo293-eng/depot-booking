@@ -4,7 +4,7 @@ import openpyxl
 import os
 from datetime import datetime
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='.')
 app.secret_key = 'depot_secret_key_12345'
 DB_FILE = 'booking.db'
 
