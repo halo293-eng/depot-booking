@@ -11,7 +11,6 @@ DB_FILE = 'booking.db'
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "depot_password_123"
 
-# Функция для вывода даты на завтра по Московскому времени (UTC+3)
 def get_current_date_str():
     days = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье']
     MSK = timezone(timedelta(hours=3))
@@ -115,3 +114,63 @@ def admin():
                     c.execute("UPDATE settings SET value='0' WHERE key='is_approved'")
                     conn.commit()
                 except Exception as e:
+                    print(f"Ошибка чтения Excel: {e}")
+                    
+        elif action == 'approve':
+            c.execute("UPDATE settings SET value='1' WHERE key='is_approved'")
+            conn.commit()
+            
+        elif action == 'cancel_slot':
+            slot_id = request.form.get('slot_id')
+            if slot_id:
+                c.execute("UPDATE slots SET is_booked=0, fio='', purpose='' WHERE id=?", (slot_id,))
+                c.execute("UPDATE settings SET value='0' WHERE key='is_approved'")
+                conn.commit()
+                
+        return redirect(url_for('admin'))
+            
+    c.execute("SELECT id, time_start, time_end, fio, purpose FROM slots WHERE is_booked=1 ORDER BY id")
+    booked = c.fetchall()
+    
+    c.execute("SELECT value FROM settings WHERE key='is_approved'")
+    is_approved = c.fetchone()[0] == '1'
+    
+    conn.close()
+    date_str = get_current_date_str()
+    return render_template('admin.html', booked=booked, is_approved=is_approved, date_str=date_str)
+
+@app.route('/export')
+def export():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+        
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    
+    c.execute("SELECT value FROM settings WHERE key='is_approved'")
+    is_approved = c.fetchone()[0] == '1'
+    
+    if not is_approved:
+        conn.close()
+        return "Ошибка: График не утвержден! Сначала нажмите кнопку «Утвердить график».", 403
+        
+    c.execute("SELECT time_start || ' - ' || time_end as 'Время', fio as 'ФИО', purpose as 'Цель' FROM slots WHERE is_booked=1 ORDER BY id")
+    rows = c.fetchall()
+    conn.close()
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Записи"
+    ws.append(['Время', 'ФИО', 'Цель'])
+    for r in rows:
+        ws.append(list(r))
+        
+    MSK = timezone(timedelta(hours=3))
+    tomorrow = datetime.now(MSK) + timedelta(days=1)
+    filename = f"raspisanie_{tomorrow.strftime('%d_%m_%Y')}.xlsx"
+    wb.save(filename)
+    return send_file(filename, as_attachment=True)
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
